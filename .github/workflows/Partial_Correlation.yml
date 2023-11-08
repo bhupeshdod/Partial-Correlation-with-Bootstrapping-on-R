@@ -1,0 +1,182 @@
+---
+title: "Individual Assignment 2"
+author: "MSCI 718 2023W"
+subtitle: Partial Correlation or Bootstrapping
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(ppcor)
+library(boot)
+library(corrplot)
+```
+
+# Analysis Report
+
+```{r}
+#Importing the database
+data_file <- read.csv("Data Carrard et al. 2022 MedTeach.csv")
+str(data_file)
+```
+```{r}
+#Summary statistics of data
+summary(data_file)
+```
+
+```{r}
+#Checking if there is any null values
+data_file %>%
+    summarise_all(list(~ sum(is.na(.))))
+```
+```{r}
+# Filtering and Visualizing the B.MED dataset
+B.MED_data <- dplyr::select(data_file, cesd, stai_t, year, health, age) %>% filter(year<4)
+B.MED_data %>% 
+  ggplot(aes(x=cesd, y=stai_t)) + geom_point() + labs(x="CESD", y="STAI") + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale", title = "CESD vs STAI", subtitle = "For B.MED Participats")
+summary(B.MED_data)
+shapiro.test(B.MED_data$cesd)
+shapiro.test(B.MED_data$stai_t)
+```
+```{r}
+# Filtering and Visualizing the M.MED dataset
+M.MED_data <- dplyr::select(data_file, cesd, stai_t, year, health, age) %>% filter(year>3)
+M.MED_data %>% 
+  ggplot(aes(x=cesd, y=stai_t)) + geom_point() + labs(x="CESD", y="STAI") + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale" ,title = "CESD vs STAI", subtitle = "For M.MED Participat")
+summary(M.MED_data)
+shapiro.test(M.MED_data$cesd)
+shapiro.test(M.MED_data$stai_t)
+```
+```{r}
+#Checking Normality distribution using QQ Plots
+B.MED_data %>% 
+  ggplot(aes(sample=cesd)) + stat_qq() + geom_qq_line(aes(color="red")) + theme(legend.position = "none") + labs(title="CESD Distribution QQ Plot", subtitle = "For B.MED Participat", y = "CESD scale")
+
+B.MED_data %>%
+  ggplot(aes(sample=stai_t)) + stat_qq() + geom_qq_line(aes(color="red")) + theme(legend.position = "none") + labs(title="STAI Distribution QQ Plot",subtitle = "For B.MED Participat", y = "STAI scale")
+
+M.MED_data %>%
+  ggplot(aes(sample=cesd)) + stat_qq() + geom_qq_line(aes(color="red")) + theme(legend.position = "none") + labs(title="CESD Distribution QQ Plot", subtitle = "For M.MED Participat", y = "CESD scale")
+
+M.MED_data %>%
+  ggplot(aes(sample=stai_t)) + stat_qq() + geom_qq_line(aes(color="red")) + theme(legend.position = "none") + labs(title="STAI Distribution QQ Plot", subtitle = "For M.MED Participat", y = "STAI scale")
+```
+```{r}
+#Data Conversion of B.MED participants data using square root, reciprocal, and log function and checking the Shapiro-Wilk test
+cesd_sqr <- sqrt(B.MED_data$cesd)
+  shapiro.test(cesd_sqr)
+cesd_reci <- 1/(B.MED_data$cesd)
+  shapiro.test(cesd_reci)
+cesd_log <- log10(B.MED_data$cesd)
+  shapiro.test(cesd_log)
+  
+stai_sqr <- sqrt(B.MED_data$stai)
+  shapiro.test(stai_sqr)
+stai_reci <- 1/(B.MED_data$stai)
+  shapiro.test(stai_reci)
+stai_log <- log10(B.MED_data$stai)
+  shapiro.test(stai_log)
+```
+
+```{r}
+#Data Conversion of M.MED participants data using square root, reciprocal, and log function and checking the Shapiro-Wilk test
+cesd_sqr <- sqrt(M.MED_data$cesd)
+  shapiro.test(cesd_sqr)
+cesd_reci <- 1/(M.MED_data$cesd)
+  shapiro.test(cesd_reci)
+cesd_log <- log10(M.MED_data$cesd)
+  shapiro.test(cesd_log)
+  
+stai_sqr <- sqrt(M.MED_data$stai)
+  shapiro.test(stai_sqr)
+stai_reci <- 1/(M.MED_data$stai)
+  shapiro.test(stai_reci)
+stai_log <- log10(M.MED_data$stai)
+  shapiro.test(stai_log)
+```
+```{r}
+# Bootstrapping the B.MED participants dataset and checking correlation
+boot_func <- function(dataSet, i) {
+  rho <- cor(dataSet$cesd[i], dataSet$stai_t[i], use="complete.obs", method="pearson")
+  return(rho)
+}
+boot_B.MED <- boot(B.MED_data, boot_func, 1000)
+boot_B.MED
+boot.ci(boot_B.MED, conf=0.95, type="perc")
+```
+```{r}
+# Bootstrapping the M.MED participants dataset and checking correlation
+boot_M.MED <- boot(M.MED_data, boot_func, 1000)
+boot_M.MED
+boot.ci(boot_M.MED, conf=0.95, type="perc")
+```
+```{r}
+# Correlation between CESD and STAI for B.MED participants using Spearman
+B.MED_health <- dplyr::select(B.MED_data,cesd,stai_t,health)
+B.MED_cor <- cor(B.MED_health,method="spearman")
+cor.test(B.MED_health$cesd,B.MED_health$stai_t,method="spearman")
+
+ggplot(B.MED_health, aes(cesd, stai_t)) + geom_point(color = "darkblue") + stat_smooth(method=lm,color="red",linetype="dashed",size=0.8) + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale", title = "CESD and STAI Correlation (Spearman)", subtitle = "For B.MED Participats")
+```
+```{r}
+#B.MED participants Correlation matrix using Spearman method
+corrplot(B.MED_cor, method="color", tl.srt = 45, type = "lower", addCoef.col="black", outline=F, diag=T,
+         col=colorRampPalette(c("deepskyblue1","white","indianred3"))(50))
+```
+
+```{r}
+# Correlation between CESD and STAI for M.MED participants using Spearman
+M.MED_health <- dplyr::select(M.MED_data,cesd,stai_t,health)
+M.MED_cor <- cor(M.MED_health,method="spearman")
+cor.test(M.MED_health$cesd,M.MED_health$stai_t,method="spearman")
+
+ggplot(M.MED_health, aes(cesd, stai_t)) + geom_point(color = "darkblue") + stat_smooth(method=lm,color="red",linetype="dashed",size=0.8) + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale", title = "CESD and STAI Correlation (Spearman)", subtitle = "For M.MED Participats")
+```
+```{r}
+#M.MED participants Correlation matrix using Spearman method
+corrplot(M.MED_cor, method="color", tl.srt = 45, type = "upper", addCoef.col="black", outline=F, diag=T,
+         col=colorRampPalette(c("deepskyblue1","white","indianred3"))(50))
+```
+```{r}
+#B.MED participants Partial Correlation using Spearman
+pcor(B.MED_health, method="spearman")
+pcor.test(B.MED_health$cesd, B.MED_health$stai_t, B.MED_health$health, method = "spearman")
+```
+```{r}
+#B.MED participants Partial Correlation plot using Spearman
+ggplot(B.MED_health, aes(cesd, stai_t)) + geom_point(color = "darkblue") + stat_smooth(method=lm,color="red",linetype="dashed",size=0.8) + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale", title = "CESD and STAI Partial Correlation controlled by Health", subtitle = "For B.MED Participats")
+```
+
+```{r}
+#M.MED participants Partial Correlation using Spearman
+pcor(M.MED_health, method = "spearman")
+pcor.test(M.MED_health$cesd, M.MED_health$stai_t, M.MED_health$health, method = "spearman")
+```
+```{r}
+#M.MED participants Partial Correlation plot using Spearman
+ggplot(M.MED_health, aes(cesd, stai_t)) + geom_point(color = "darkblue") + stat_smooth(method=lm,color="red",linetype="dashed",size=0.8) + labs(x = "Center for Epidemiologic Studies Depression (CESD) scale", y="State-Trait Anxiety Inventory (STAI) scale", title = "CESD and STAI Partial Correlation controlled by Health", subtitle = "For M.MED Participats")
+
+#pairs(M.MED_health, c("cesd","stai","health")
+```
+
+*Instructions: Complete this assignment individually and submit online to the LEARN Dropbox as a **PDF (max 2 pages)**. You may include any number of pages of appendices, which might include R output, statistics, or plots that don't fit in to the report - just make sure that the report doesn't rely on the appendices to make its points, as graders will at most skim or spot check the appendix. Also upload any source files, for example, and any .R or .Rmd files that you used. If you discussed problems with other students, please describe the nature of that discussion (e.g., on Team, in a study group). Remember, you can discuss approaches to problems with other people, but **the work you submit must be your own.***
+
+**Your assignment:** Choose two or more variables from the dataset: [Student Mental Health](https://www.kaggle.com/datasets/thedevastator/medical-student-mental-health) and analyze them using correlation. We will be looking at how you think about assumptions, conduct correlation analysis, and follow-up with conclusions and takeaways. As an added constraint, you must use either one example of using partial correlation (i.e., controlling for additional variables) or bootstrapped correlation (ideally with some rational for choosing bootstrapping). Beyond that, you can use as many or as few statistics, graphs, and tests as you need to discover something interesting.
+
+**For your one report**, include the following sections:
+
+1.  Data: Provide a quick summary of your dataset and any data cleaning. Ensure that you explain why the variables selected would work for correlation. Clearly list any exclusions or transformations. Aim for 1/2 a page for the section.
+2.  Planning: Identify the variables that you will correlate and check assumptions of the model(s)/test(s) that you wish to carry out. Be explicit about what model(s)/test(s) you pick and why. This section will likely be a little bit shorter, probably about 1/2 of the page.
+3.  Analysis: Calculate correlation between your variables, graph it, interpret it, and write up the results. Use plots as appropriate. You may use additional analyses as needed. This will be the bulk of your report, likely 1/2-3/4 of a page.
+4.  Conclusion: Using the [APA style](https://owl.purdue.edu/owl/research_and_citation/using_research/writing_with_statistics/index.html), write up a conclusion for your analysis and what it might mean. Use plots as appropriate. This section likely be about 1/4 to 1/2 a page.
+
+Good luck!
+
+**Hint:** It's important to read the documentation on the given dataset, this may give you a good starting point to approach your analysis.
