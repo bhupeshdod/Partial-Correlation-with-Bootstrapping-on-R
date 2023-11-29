@@ -17,7 +17,7 @@ Bootstrapping: Applied to account for the non-normality of the data.<br>
 
 **Installation** <br>
 Clone the Repository:
-git clone [repository-url]
+gh repo clone bhupeshdod/Partial-Correlation-with-Bootstrapping-on-R
 
 Install R and RStudio:
 Ensure you have R and RStudio installed on your machine.
@@ -25,9 +25,9 @@ Ensure you have R and RStudio installed on your machine.
 Required R Packages:
 The following R packages are required to run the scripts:
 
-ggplot2
-dplyr
-tidyr
+ggplot2,
+dplyr,
+tidyr,
 psych
 
 **Install them using R command:**
@@ -48,4 +48,6 @@ Negative Correlation with Health: There is a small-to-medium negative correlatio
 Other Influential Factors: The report suggests that there are other factors besides HEALTH influencing CESD and STAI_T, especially in M.MED students.
 
 ![image](https://github.com/bhupeshdod/Partial-Correlation-with-Bootstrapping-on-R/assets/141383468/3025134a-18b3-44d2-80b8-c9aff8cb3edf)
+
+![image](https://github.com/bhupeshdod/Partial-Correlation-with-Bootstrapping-on-R/assets/141383468/3413923c-75c6-4b14-ba49-8c5ede5a125a)
 
